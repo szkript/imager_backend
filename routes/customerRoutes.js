@@ -10,7 +10,7 @@ router.get('/search', async (req, res) => {
     const results = await Customer.aggregate([
       {
         $lookup: {
-          from: 'entries', // Kapcsolat a bejegyzésekkel
+          from: 'entries',
           localField: '_id',
           foreignField: 'customer',
           as: 'entries',
@@ -19,8 +19,9 @@ router.get('/search', async (req, res) => {
       {
         $match: {
           $or: [
-            { name: { $regex: searchTerm, $options: 'i' } }, // Ügyfél névben keresés
-            { 'entries.text': { $regex: searchTerm, $options: 'i' } }, // Bejegyzés szövegében keresés
+            { name: { $regex: searchTerm, $options: 'i' } },
+            { 'entries.text': { $regex: searchTerm, $options: 'i' } },
+            { generalInfo: { $regex: searchTerm, $options: 'i' } }, // Keresés az általános információkban
           ],
         },
       },
@@ -30,6 +31,7 @@ router.get('/search', async (req, res) => {
     res.status(500).json({ message: 'Error searching customers and entries' });
   }
 });
+
 // Új ügyfél felvétele
 router.post('/', async (req, res) => {
   const { name } = req.body;
