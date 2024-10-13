@@ -10,7 +10,7 @@ router.get('/search', async (req, res) => {
     const results = await Customer.aggregate([
       {
         $lookup: {
-          from: 'entries',
+          from: 'entries', // Kapcsolat a bejegyzésekkel
           localField: '_id',
           foreignField: 'customer',
           as: 'entries',
@@ -19,14 +19,30 @@ router.get('/search', async (req, res) => {
       {
         $match: {
           $or: [
-            { name: { $regex: searchTerm, $options: 'i' } },
-            { 'entries.text': { $regex: searchTerm, $options: 'i' } },
-            { generalInfo: { $regex: searchTerm, $options: 'i' } }, // Keresés az általános információkban
+            { name: { $regex: searchTerm, $options: 'i' } }, // Ügyfél névben keresés
+            { 'entries.text': { $regex: searchTerm, $options: 'i' } }, // Bejegyzés szövegében keresés
+            { 'entries.topicName': { $regex: searchTerm, $options: 'i' } }, // Bejegyzés témájában keresés
+            { generalInfo: { $regex: searchTerm, $options: 'i' } }, // Általános információkban keresés
           ],
         },
       },
     ]);
-    res.json(results);
+
+     // Adjuk hozzá a találat típusát
+     const updatedResults = results.map((result) => {
+      let matchType = 'customer'; // Alapértelmezett, ha az ügyfél nevében van találat
+      if (result.generalInfo && result.generalInfo.match(new RegExp(searchTerm, 'i'))) {
+        matchType = 'generalInfo'; // Általános információkban van találat
+      } else if (result.entries.some((entry) => entry.text.match(new RegExp(searchTerm, 'i')))) {
+        matchType = 'entries'; // Bejegyzésben van találat
+      } else if (result.entries.some((entry) => entry.topicName.match(new RegExp(searchTerm, 'i')))) {
+        matchType = 'topic'; // Bejegyzés témájában van találat
+      }
+      return { ...result, matchType: `${result._id}|${matchType}` };
+    });
+
+    console.log(updatedResults);
+    res.json(updatedResults);
   } catch (error) {
     res.status(500).json({ message: 'Error searching customers and entries' });
   }
