@@ -38,7 +38,7 @@ router.get('/search', async (req, res) => {
       } else if (result.entries.some((entry) => entry.topicName.match(new RegExp(searchTerm, 'i')))) {
         matchType = 'topic'; // Bejegyzés témájában van találat
       }
-      return { ...result, matchType: `${result._id}|${matchType}` };
+      return { ...result, matchType };
     });
 
     console.log(updatedResults);
