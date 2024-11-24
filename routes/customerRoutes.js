@@ -10,38 +10,45 @@ router.get('/search', async (req, res) => {
     const results = await Customer.aggregate([
       {
         $lookup: {
-          from: 'entries', // Kapcsolat a bejegyzésekkel
+          from: 'entries',
           localField: '_id',
           foreignField: 'customer',
           as: 'entries',
         },
       },
       {
+        $lookup: {
+          from: 'topics',
+          localField: '_id',
+          foreignField: 'customer',
+          as: 'topics',
+        },
+      },
+      {
         $match: {
           $or: [
-            { name: { $regex: searchTerm, $options: 'i' } }, // Ügyfél névben keresés
-            { 'entries.text': { $regex: searchTerm, $options: 'i' } }, // Bejegyzés szövegében keresés
-            { 'entries.topicName': { $regex: searchTerm, $options: 'i' } }, // Bejegyzés témájában keresés
-            { generalInfo: { $regex: searchTerm, $options: 'i' } }, // Általános információkban keresés
+            { name: { $regex: searchTerm, $options: 'i' } },
+            { 'entries.text': { $regex: searchTerm, $options: 'i' } },
+            { 'entries.topicName': { $regex: searchTerm, $options: 'i' } },
+            { 'topics.name': { $regex: searchTerm, $options: 'i' } },
+            { generalInfo: { $regex: searchTerm, $options: 'i' } },
           ],
         },
       },
     ]);
 
-     // Adjuk hozzá a találat típusát
-     const updatedResults = results.map((result) => {
-      let matchType = 'customer'; // Alapértelmezett, ha az ügyfél nevében van találat
+    const updatedResults = results.map((result) => {
+      let matchType = 'customer';
       if (result.generalInfo && result.generalInfo.match(new RegExp(searchTerm, 'i'))) {
-        matchType = 'generalInfo'; // Általános információkban van találat
+        matchType = 'generalInfo';
       } else if (result.entries.some((entry) => entry.text.match(new RegExp(searchTerm, 'i')))) {
-        matchType = 'entries'; // Bejegyzésben van találat
-      } else if (result.entries.some((entry) => entry.topicName.match(new RegExp(searchTerm, 'i')))) {
-        matchType = 'topic'; // Bejegyzés témájában van találat
+        matchType = 'entries';
+      } else if (result.topics.some((topic) => topic.name.match(new RegExp(searchTerm, 'i')))) {
+        matchType = 'topic';
       }
       return { ...result, matchType };
     });
 
-    console.log(updatedResults);
     res.json(updatedResults);
   } catch (error) {
     res.status(500).json({ message: 'Error searching customers and entries' });
