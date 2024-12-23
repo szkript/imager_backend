@@ -4,6 +4,8 @@ const Entry = require('../models/Entry');
 const Topic = require('../models/Topic');
 const mammoth = require('mammoth');  // Mammoth.js importálása
 
+
+
 router.put('/:id', async (req, res) => {
   try {
     const { text, imageBase64, fileBase64, fileName, topicName, customer } = req.body;
@@ -131,3 +133,12 @@ router.get('/topics/customer/:customerId', async (req, res) => {
 });
 
 module.exports = router;
+
+router.delete('/:id', async (req, res) => {
+  try {
+    await Entry.findByIdAndDelete(req.params.id);
+    res.status(200).json({ message: 'Entry deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
