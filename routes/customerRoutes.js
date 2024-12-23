@@ -88,21 +88,59 @@ router.get('/:customerId', async (req, res) => {
   }
 });
 
-// Ügyfél általános információinak frissítése
+// Update customer's general info with category
 router.put('/:customerId/generalInfo', async (req, res) => {
-  const { generalInfo } = req.body;
+  const { generalInfo, category } = req.body;
   try {
-    const customer = await Customer.findByIdAndUpdate(
-      req.params.customerId,
-      { generalInfo },
-      { new: true }
+    const customer = await Customer.findById(req.params.customerId);
+    
+    if (!customer) {
+      return res.status(404).json({ message: 'Customer not found' });
+    }
+
+    // Initialize categories array if it doesn't exist
+    if (!customer.categories) {
+      customer.categories = [];
+    }
+
+    // Check if category already exists
+    const existingCategoryIndex = customer.categories.findIndex(
+      cat => cat.category === category
     );
-    res.json(customer);
+
+    if (existingCategoryIndex !== -1) {
+      // Update existing category
+      customer.categories[existingCategoryIndex].text = generalInfo;
+    } else {
+      // Add new category
+      customer.categories.push({ category, text: generalInfo });
+    }
+
+    const updatedCustomer = await customer.save();
+    res.json(updatedCustomer);
   } catch (error) {
     res.status(500).json({ message: 'Error updating general information' });
   }
 });
+// Delete specific category from general info
+router.delete('/:customerId/generalInfo/:category', async (req, res) => {
+  try {
+    const customer = await Customer.findById(req.params.customerId);
+    
+    if (!customer) {
+      return res.status(404).json({ message: 'Customer not found' });
+    }
 
+    customer.categories = customer.categories.filter(
+      cat => cat.category !== req.params.category
+    );
+
+    const updatedCustomer = await customer.save();
+    res.json(updatedCustomer);
+  } catch (error) {
+    res.status(500).json({ message: 'Error deleting category' });
+  }
+});
 // Ügyfél általános információinak törlése
 router.delete('/:customerId/generalInfo', async (req, res) => {
   try {
