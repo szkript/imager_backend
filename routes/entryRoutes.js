@@ -4,6 +4,28 @@ const Entry = require('../models/Entry');
 const Topic = require('../models/Topic');
 const mammoth = require('mammoth');  // Mammoth.js importálása
 
+router.put('/:id', async (req, res) => {
+  try {
+    const { text, imageBase64, fileBase64, fileName, topicName, customer } = req.body;
+    
+    const updateData = {
+      text,
+      imageBase64,
+      fileBase64,
+      fileName
+    };
+
+    const updatedEntry = await Entry.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    ).populate('topic');
+    
+    res.json(updatedEntry);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
 // Új bejegyzés hozzáadása (fájlokkal)
 router.post('/', async (req, res) => {
   const { customer, text, imageBase64, fileBase64, fileName, topicName } = req.body;
